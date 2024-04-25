@@ -42,7 +42,11 @@ async def text_from_file(filename, update: Update, context: ContextTypes.DEFAULT
     )
 
     summary_text = summary.get("output_text", "")
-    return summary_text  # Summary of our text, need to see the multi agent
+
+    summary = (
+        "Cудя по тексту, краткое описание выглядит следующим образом:" + summary_text
+    )
+    return summary  # Summary of our text, need to see the multi-agent
 
 
 # Can here convert it to the text to the speech and response

@@ -60,17 +60,33 @@ async def get_new_token(
     return token  # getting the token correctly
 
 
+# actually better to take user message and then save it as file to prevent the too small error from Sber-speech
+
+
 async def text_to_speech(  # I am passing the message text, it can also support text file
-    message_text, TOKEN
-):  # maybe its not getting converted as no file extension?
-    data = message_text.encode("'utf-8'")
+    filename, TOKEN
+):
+    filepath = filename  # we have the file
+    file = open(filepath, "rb")  # getting the file to read
     url = "https://smartspeech.sber.ru/rest/v1/data:upload"
     headers = {"Authorization": f"Bearer {TOKEN}"}
+    data = file.read()
     response = requests.post(url=url, data=data, headers=headers, verify=False)
-    print(response.json())
     return str(
         response.json()["result"]["request_file_id"]
     )  # correctly returning the file_id
+
+
+#     message_text, TOKEN
+# ):  # maybe its not getting converted as no file extension?
+#     data = message_text
+#     url = "https://smartspeech.sber.ru/rest/v1/data:upload"
+#     headers = {"Authorization": f"Bearer {TOKEN}"}
+#     response = requests.post(url=url, data=data, headers=headers, verify=False)
+#     print(response.json())
+#     return str(
+#         response.json()["result"]["request_file_id"]
+#     )  # correctly returning the file_id
 
 
 async def speech_recognition_task(fileId, Token):  # Now to get the task done

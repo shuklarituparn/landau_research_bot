@@ -94,6 +94,7 @@ async def speech_recognition_task(fileId, Token):  # Now to get the task done
     # print(response.json())   working
     return str(response.json()["result"]["id"])  # correctly returning the taskid
 
+
 async def speech_recognition_task_voice(fileId, Token):  # Now to get the task done
     url = "https://smartspeech.sber.ru/rest/v1/speech:async_recognize"
     headers = {"Authorization": f"Bearer {Token}", "Content-Type": "application/json"}
@@ -112,7 +113,6 @@ async def speech_recognition_task_voice(fileId, Token):  # Now to get the task d
     # print(json.dumps(data)) working
     # print(response.json())  working
     return str(response.json()["result"]["id"])  # correctly returning the taskid
-
 
 
 # {  sample result for the task creating

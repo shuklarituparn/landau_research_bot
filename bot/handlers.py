@@ -105,7 +105,22 @@ async def summarize_paper(update: Update, context: ContextTypes.DEFAULT_TYPE):
         filename, update, context
     )
     # can actually gen a file id, and then send the user the file?
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id, text="Вот ваши суммари: "
+    )
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text_to_send)
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="Подождите 30 секудн чтобы получить аудио суммари ",
+    )
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id, text="Вот ваши аудио-суммари: "
+    )
+    # need to create a file with the summary otherwise saying file too small
+    summary_file = open(f"{filename}.txt", "w+")
+    summary_file.write(text_to_send)
+    summary_file.close()
+    await text_to_speech(f"{filename}.txt", update=update, context=context)
 
 
 async def summarize_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -139,8 +154,9 @@ async def listen_and_speak(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text=Data)
 
 
-async def text_to_speech(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def text_to_speech(Filename, update: Update, context: ContextTypes.DEFAULT_TYPE):
     Data = await text_to_speech_impl.text_to_speech_impl(
+        filename=Filename,
         update=update,
         context=context,
         SALUTE_AUTH_DATA=SALUTE_AUTH_DATA,
