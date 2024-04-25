@@ -4,6 +4,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from bot.utils.speech2text import speech_to_text
 
+
 async def speech_to_text_audio(
     user_voice,
     update: Update,

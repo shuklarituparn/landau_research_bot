@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+
+
 def send_mail(email_to: str, subject: str, texttosend: str):
     resend.api_key = RESEND_API_KEY
 

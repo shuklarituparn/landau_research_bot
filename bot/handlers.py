@@ -29,7 +29,7 @@ load_dotenv()  # loading the environment
 SALUTE_SCOPE = os.getenv("SPEECH_SCOPE")
 SALUTE_AUTH_DATA = os.getenv("SPEECH-AUTH-DATA")
 
-keyboard = [["summarize", "brainstorm"], ["assistant","analyze"]]
+keyboard = [["summarize", "brainstorm"], ["assistant", "analyze"]]
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -67,7 +67,8 @@ async def task_selector(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return SUMMARIZE_PAPER
     elif text == "brainstorm":
         await context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Давайте поищем какие-нибудь научные работы!"
+            chat_id=update.effective_chat.id,
+            text="Давайте поищем какие-нибудь научные работы!",
         )
         return BRAINSTORM
     elif text == "assistant":
