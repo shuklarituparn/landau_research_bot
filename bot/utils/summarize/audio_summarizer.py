@@ -1,20 +1,21 @@
 import os
+import json
+import requests
 from telegram import Update
 from telegram.ext import ContextTypes
-
 from langchain_community.chat_models import GigaChat
 from langchain.prompts import load_prompt
 from langchain.chains.summarize import load_summarize_chain
-from langchain_community.document_loaders import PyPDFLoader  # importing the pdf loader
+from langchain_community.document_loaders import JSONLoader
 from dotenv import load_dotenv
 
 load_dotenv()
-GIGACHAT_CREDENTIALS = os.getenv("GIGACHAT_API_AUTH")
+GIGACHAD_CREDENTIALS = os.getenv("GIGACHAT_API_AUTH")
 
 
-async def text_from_file(filename, update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def text_from_file(filename):
     giga = GigaChat(
-        credentials=GIGACHAT_CREDENTIALS,
+        credentials=GIGACHAD_CREDENTIALS,
         scope="GIGACHAT_API_CORP",
         verify_ssl_certs=False,
     )
@@ -26,32 +27,30 @@ async def text_from_file(filename, update: Update, context: ContextTypes.DEFAULT
         map_prompt=map_prompt,
         combine_prompt=combine_prompt,
     )
-
     filepath = filename
-    loader = PyPDFLoader(filepath)  # loading the pdf
-    documents = loader.load_and_split()
+    print(filepath)
+    loader = JSONLoader(
+        filepath, jq_schema=".", json_lines=True, text_content=False, content_key="text"
+    )
+    document = loader.load()
+    print(document)
+
     summary = chain.invoke(
         {
-            "input_documents": documents,
+            "input_documents": document,
             "map_size": "одно предложение",
             "combine_size": "три предложения",
         }
     )
-
-    summary_text = summary.get("output_text", " ")
-
+    summary_text = summary.get("output_text", "")
     summary = (
         "Cудя по тексту, краткое описание выглядит следующим образом:" + summary_text
     )
-    return summary  # Summary of our text, need to see the multi-agent
+    return summary
 
 
-# Can here convert it to the text to the speech and response
-
-
-# TODO: Can use chroma to store all these in the collection and it will increase the memory
-# TODO: Can store the data to the cloud and get the response id, store it and then let user decide when to download
-
-
-# TODO: Need to make the helper function that checks the message type and sends uses the voice to audio converter
-# TODO: streaming=True for big models where text gen requires more time
+#
+# if __name__=="__main__":
+#     async def get_text():
+#         data=await text_from_file("response.json")
+#         print(data)

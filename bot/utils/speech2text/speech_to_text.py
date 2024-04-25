@@ -6,6 +6,7 @@ import requests
 import uuid
 from telegram import Update
 from telegram.ext import ContextTypes
+from bot.utils.summarize.audio_summarizer import text_from_file
 
 
 def gen_new_token(AUTH_DATA, API_SCOPE) -> str:  # returning the token
@@ -83,6 +84,8 @@ async def speech_recognition_task(fileId, Token):  # Now to get the task done
         "options": {
             "language": "ru-RU",
             "audio_encoding": "MP3",
+            "no_speech_timeout": "8s",
+            "max_speech_timeout": "20s",
         },
         "request_file_id": f"{fileId}",
     }
@@ -90,8 +93,8 @@ async def speech_recognition_task(fileId, Token):  # Now to get the task done
     response = requests.post(
         url=url, data=json.dumps(data), headers=headers, verify=False
     )
-    # print(json.dumps(data)) working so commenting it out
-    # print(response.json())   working
+    print(json.dumps(data))  # working so commenting it out
+    print(response.json())  # working
     return str(response.json()["result"]["id"])  # correctly returning the taskid
 
 
@@ -130,7 +133,7 @@ async def get_task_status(fileId, Token):  # Now to get the task done
     url = f"https://smartspeech.sber.ru/rest/v1/task:get?id={fileId}"
     headers = {"Authorization": f"Bearer {Token}"}
     response = requests.get(url=url, headers=headers, verify=False)
-    # print(response.json())  working
+    print(response.json())  # working
     return response.json()["result"]["response_file_id"]
     # correctly returning the taskid
 
@@ -139,5 +142,11 @@ async def get_the_text(fileId, Token):  # Now to get the task done
     url = f"https://smartspeech.sber.ru/rest/v1/data:download?response_file_id={fileId}"
     headers = {"Authorization": f"Bearer {Token}"}
     response = requests.get(url=url, headers=headers, verify=False)
-    # print(response.json())  # result will have the
+    print(response.json())  # result will have the
+    data = response.json()
+    with open("response.json", "w+") as f:
+        json.dump(data, f)
+    f.close()
+    text = await text_from_file(f)
+    print(text)
     return str(response.json()[0]["results"][0]["text"])

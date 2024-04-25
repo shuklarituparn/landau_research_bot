@@ -12,6 +12,7 @@ from telegram.ext import (
 )
 
 import bot.utils.summarize.doc_summary
+from bot.utils.multi_chain_brainstorm import brainstorm
 from bot.utils.speech2text import speech_to_text_audio, speech_to_text_voice
 from bot.utils.text2speech import text_to_speech_impl
 from bot import ai_helper
@@ -19,17 +20,16 @@ from bot import ai_helper
 (
     SELECTING,
     SUMMARIZE_PAPER,
-    AUDIO_SUMMARIZE,
-    LISTEN_AND_SPEAK,
-    TEXT_TO_SPEAK,
-    CALL_AI,
-) = range(6)
+    BRAINSTORM,
+    ASSISTANT,
+    ANALYZE,
+) = range(5)
 
 load_dotenv()  # loading the environment
 SALUTE_SCOPE = os.getenv("SPEECH_SCOPE")
 SALUTE_AUTH_DATA = os.getenv("SPEECH-AUTH-DATA")
 
-keyboard = [["summarize", "listen"], ["Помог с защитой"]]
+keyboard = [["summarize", "brainstorm"], ["assistant","analyze"]]
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -50,48 +50,37 @@ async def help_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 1. /start   чтобы снова запустить бот
 2. /help    Чтобы получить помочь
+3. summarize: Отправь научную работу который хочешь суммизировать! Также получи аудио суммари
+4. brainstorm: Давайте поищем какие-нибудь научные работы!
+5: analyze: Отправьте вашу работу(в виде pdf) чтобы получить совет!
 """,
     )
 
 
 async def task_selector(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.lower()
-    # await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
-    # The program is not reaching here
-
     if text == "summarize":
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text="Отправь научную работу который хочешь суммизировать!",
         )
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Предрочитано фото!"
-        )
         return SUMMARIZE_PAPER
-    elif text == "summarize_audio":
+    elif text == "brainstorm":
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, text="Давайте поищем какие-нибудь научные работы!"
+        )
+        return BRAINSTORM
+    elif text == "assistant":
         await context.bot.send_message(
             chat_id=update.effective_chat.id, text="Спроси про что-то на научном"
         )
-        return AUDIO_SUMMARIZE
-    elif text == "listen":
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Спроси про что-то на научном"
-        )
-        return LISTEN_AND_SPEAK
-    elif text == "texting":
+        return ASSISTANT
+    elif text == "analyze":
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text="Отправьте текст, чтобы получить аудио",
+            text="Отправьте вашу работу(в виде pdf) чтобы получить совет!",
         )
-        return TEXT_TO_SPEAK
-
-    elif text == "Помог с защитой":
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text="Зову вашего помощника, подождите, пока он ответит на ваши вопросы! "
-            "отправь end чтобы отменить",
-        )
-        return CALL_AI
+        return ANALYZE
 
     return SELECTING
 
@@ -104,7 +93,6 @@ async def summarize_paper(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text_to_send = await bot.utils.summarize.doc_summary.text_from_file(
         filename, update, context
     )
-    # can actually gen a file id, and then send the user the file?
     await context.bot.send_message(
         chat_id=update.effective_chat.id, text="Вот ваши суммари: "
     )
@@ -116,27 +104,18 @@ async def summarize_paper(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id, text="Вот ваши аудио-суммари: "
     )
-    # need to create a file with the summary otherwise saying file too small
     summary_file = open(f"{filename}.txt", "w+")
     summary_file.write(text_to_send)
     summary_file.close()
     await text_to_speech(f"{filename}.txt", update=update, context=context)
 
 
-async def summarize_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    user_audio = update.message.audio.file_id
-    newfile = await context.bot.get_file(user_audio)
-    filename = update.message.audio.file_name
-    await newfile.download_to_drive(filename)
-    Data = await speech_to_text_audio.speech_to_text_audio(
-        filename,
-        update=update,
-        context=context,
-        SALUTE_AUTH_DATA=SALUTE_AUTH_DATA,
-        SALUTE_SCOPE=SALUTE_SCOPE,
-    )
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=Data)
+async def brainstorm_a_paper(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # test the brainstorm
+    user_query = update.message.text
+    print(user_query)
+    text = await brainstorm.generate_find_the_paper(user_query=user_query)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
 
 async def listen_and_speak(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -182,7 +161,7 @@ conv_handler = ConversationHandler(
     states={
         SELECTING: [
             MessageHandler(
-                filters.Regex("^(summarize|listen|summarize_audio|texting)$"),
+                filters.Regex("^(summarize|brainstorm|texting)$"),
                 task_selector,
             ),
         ],
@@ -192,27 +171,22 @@ conv_handler = ConversationHandler(
                 summarize_paper,
             ),
         ],
-        AUDIO_SUMMARIZE: [
+        BRAINSTORM: [
             MessageHandler(
-                filters.AUDIO & ~(filters.COMMAND | filters.Regex("^End|end$")),
-                summarize_audio,
+                filters.TEXT & ~(filters.COMMAND | filters.Regex("^End|end$")),
+                brainstorm_a_paper,
             ),
         ],
-        LISTEN_AND_SPEAK: [
+        ASSISTANT: [
             MessageHandler(
                 filters.VOICE & ~(filters.COMMAND | filters.Regex("^End|end$")),
                 listen_and_speak,
             ),
         ],
-        TEXT_TO_SPEAK: [
+        ANALYZE: [
             MessageHandler(
                 filters.TEXT & ~(filters.COMMAND | filters.Regex("^End|end$")),
                 text_to_speech,
-            ),
-        ],
-        CALL_AI: [
-            MessageHandler(
-                filters.TEXT & ~(filters.COMMAND | filters.Regex("^End|end$")), ask_ai
             ),
         ],
     },

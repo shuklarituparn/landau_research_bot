@@ -8,3 +8,4 @@ pillow~=10.3.0
 requests~=2.31.0
 psycopg2~=2.9.9
 peewee~=3.17.3
+resend~=0.8.0

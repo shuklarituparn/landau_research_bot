@@ -4,7 +4,6 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from bot.utils.speech2text import speech_to_text
 
-
 async def speech_to_text_audio(
     user_voice,
     update: Update,
@@ -20,7 +19,7 @@ async def speech_to_text_audio(
     )
     request_file_id = await speech_to_text.speech_to_text(user_voice, TOKEN)
     task_id = await speech_to_text.speech_recognition_task(request_file_id, TOKEN)
-    time.sleep(1)
+    time.sleep(10)
     response = await speech_to_text.get_task_status(task_id, TOKEN)
     Data = await speech_to_text.get_the_text(response, TOKEN)
     return Data

@@ -26,3 +26,7 @@ async def text_to_speech_impl(
     response = await text_to_speech.get_task_status(task_id, TOKEN)
     Data = await text_to_speech.get_the_audio(response, TOKEN)
     return Data
+
+
+# Todo: text to speech, instead of that just use some voice to test it, instead of audio using voice
+# Todo: Now need to make a multi agent system
