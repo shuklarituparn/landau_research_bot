@@ -1,5 +1,4 @@
 import os
-import time
 
 from dotenv import load_dotenv
 from telegram import Update, ReplyKeyboardMarkup
@@ -12,18 +11,17 @@ from telegram.ext import (
 )
 
 import bot.utils.summarize.doc_summary
-from bot.utils.multi_chain_brainstorm import brainstorm
-from bot.utils.speech2text import speech_to_text_audio, speech_to_text_voice
-from bot.utils.text2speech import text_to_speech_impl
 from bot import ai_helper
+from bot.utils.multi_chain_brainstorm import brainstorm
+from bot.utils.speech2text import speech_to_text_voice
+from bot.utils.text2speech import text_to_speech_impl
 
 (
     SELECTING,
     SUMMARIZE_PAPER,
     BRAINSTORM,
     ASSISTANT,
-    ANALYZE,
-) = range(5)
+) = range(4)
 
 load_dotenv()  # loading the environment
 SALUTE_SCOPE = os.getenv("SPEECH_SCOPE")
@@ -52,7 +50,6 @@ async def help_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
 2. /help    Чтобы получить помочь
 3. summarize: Отправь научную работу который хочешь суммизировать! Также получи аудио суммари
 4. brainstorm: Давайте поищем какие-нибудь научные работы!
-5: analyze: Отправьте вашу работу(в виде pdf) чтобы получить совет!
 """,
     )
 
@@ -76,12 +73,6 @@ async def task_selector(update: Update, context: ContextTypes.DEFAULT_TYPE):
             chat_id=update.effective_chat.id, text="Спроси про что-то на научном"
         )
         return ASSISTANT
-    elif text == "analyze":
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text="Отправьте вашу работу(в виде pdf) чтобы получить совет!",
-        )
-        return ANALYZE
 
     return SELECTING
 
@@ -182,12 +173,6 @@ conv_handler = ConversationHandler(
             MessageHandler(
                 filters.VOICE & ~(filters.COMMAND | filters.Regex("^End|end$")),
                 listen_and_speak,
-            ),
-        ],
-        ANALYZE: [
-            MessageHandler(
-                filters.TEXT & ~(filters.COMMAND | filters.Regex("^End|end$")),
-                text_to_speech,
             ),
         ],
     },
