@@ -15,7 +15,7 @@ async def translate_text(content):
 
     messages = [
         SystemMessage(
-            content="Вы действительно хороший переводчик, переведите следующий текст на русском языке с правильным форматированием \n"
+            content="Вы действительно хороший переводчик, переведите следующий текст на английском языке"
         ),
         HumanMessage(content=content),
     ]

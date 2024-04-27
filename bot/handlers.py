@@ -1,6 +1,8 @@
+import datetime
 import os
 
 from dotenv import load_dotenv
+import bot.Database.database as db
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import (
     ContextTypes,
@@ -14,6 +16,9 @@ import bot.utils.summarize.doc_summary
 from bot import ai_helper
 from bot.utils.multi_chain_brainstorm import brainstorm
 from bot.utils.speech2text import speech_to_text_voice
+from bot.utils.email_send import email_to_send
+from bot.utils.translate_utils import email_formatter
+
 from bot.utils.text2speech import text_to_speech_impl
 
 (
@@ -27,7 +32,7 @@ load_dotenv()  # loading the environment
 SALUTE_SCOPE = os.getenv("SPEECH_SCOPE")
 SALUTE_AUTH_DATA = os.getenv("SPEECH-AUTH-DATA")
 
-keyboard = [["summarize", "brainstorm"], ["assistant", "analyze"]]
+keyboard = [["summarize", "brainstorm"], ["assistant"]]
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -103,26 +108,67 @@ async def summarize_paper(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def brainstorm_a_paper(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # test the brainstorm
-    user_query = update.message.text
-    print(user_query)
-    text = await brainstorm.generate_find_the_paper(user_query=user_query)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    if update.message.text.startswith("email:"):
+        if db.checking_user_exits(update.effective_user.id):
 
+            if db.checking_user_email_exits(user_id=update.effective_user.id) == "":
+                email = update.message.text.split(":")[1]
+                userid = update.effective_user.id
+                db.User.update(email=email).where(db.User.userid == userid).execute()
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    text="получил ваш email: " f"{email}",
+                )
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    text="Есл хотите получить резултать в данном email",
+                )
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    text="отправьте текст в формате mail:{что вы хотите}",
+                )
+                print(email)  # email get
+        else:
+            email = update.message.text.split(":")[1]
+            db.User.create(
+                userid=update.effective_user.id,
+                name=update.effective_user.first_name,
+                username=update.effective_user.username,
+                chromacollection="",
+                email=email,
+                usertoken="",
+                gigachat_token="",
+                lastGen=datetime.datetime.now(),
+                last_gen_gigachat=datetime.datetime.now(),
+            )
+    elif update.message.text.startswith("mail:"):
+        if db.checking_user_email_exits(user_id=update.effective_user.id) != "":
+            email = db.User.get(userid=update.effective_user.id).email
+            print(email)
+            text_to_find = update.message.text.split(":")[1]
+            print(text_to_find)
+            doc_to_send = await brainstorm.generate_find_the_paper(
+                user_query=text_to_find
+            )
+            # formatted_text=await email_formatter.text_formatter(doc_to_send)
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id, text="чекните ваш mail"
+            )
+            email_to_send.send_mail(email_to=email, texttosend=doc_to_send)
+        else:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id, text="добавь mail"
+            )
 
-async def listen_and_speak(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_voice = update.message.voice.file_id
-    await context.bot.sendMessage(chat_id=update.effective_chat.id, text=user_voice)
-    newfile = await context.bot.get_file(user_voice)
-    await newfile.download_to_drive(user_voice)  # Here we send the user_ voice
-    Data = await speech_to_text_voice.speech_to_text_voice(
-        user_voice=user_voice,
-        update=update,
-        context=context,
-        SALUTE_AUTH_DATA=SALUTE_AUTH_DATA,
-        SALUTE_SCOPE=SALUTE_SCOPE,
-    )
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=Data)
+    elif update.message.text.startswith("nml:"):
+        text_to_find = update.message.text.split(":")[1]
+        print(text_to_find)
+        doc = await brainstorm.generate_find_the_paper(user_query=text_to_find)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=doc)
+    else:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, text="nml: , email: , mail:"
+        )
 
 
 async def text_to_speech(Filename, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -137,7 +183,9 @@ async def text_to_speech(Filename, update: Update, context: ContextTypes.DEFAULT
 
 
 async def ask_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await ai_helper.ai_help(update, context)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Привет")
+    result = await ai_helper.ai_help(update.message.text)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=result)
 
 
 async def end(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -153,7 +201,7 @@ conv_handler = ConversationHandler(
     states={
         SELECTING: [
             MessageHandler(
-                filters.Regex("^(summarize|brainstorm|texting)$"),
+                filters.Regex("^(summarize|brainstorm|assistant)$"),
                 task_selector,
             ),
         ],
@@ -171,8 +219,8 @@ conv_handler = ConversationHandler(
         ],
         ASSISTANT: [
             MessageHandler(
-                filters.VOICE & ~(filters.COMMAND | filters.Regex("^End|end$")),
-                listen_and_speak,
+                filters.TEXT and ~(filters.COMMAND | filters.Regex("^End|end$")),
+                ask_ai,
             ),
         ],
     },

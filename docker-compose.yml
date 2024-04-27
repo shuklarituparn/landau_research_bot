@@ -1,0 +1,27 @@
+version: "3"
+services:
+   app:
+    container_name: Telegram_bot
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+    env_file:
+      - bot/.env
+
+   postgres:
+    image: postgres:15.4
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: telegramuserdata
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    volumes:
+      - user_data:/var/lib/postgresql/data
+
+
+volumes:
+  user_data:

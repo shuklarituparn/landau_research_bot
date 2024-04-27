@@ -16,7 +16,7 @@ GIGACHAD_CREDENTIALS = os.getenv("GIGACHAT_API_AUTH")
 async def text_from_file(filename):
     giga = GigaChat(
         credentials=GIGACHAD_CREDENTIALS,
-        scope="GIGACHAT_API_CORP",
+        scope="GIGACHAT_API_PERS",
         verify_ssl_certs=False,
     )
     map_prompt = load_prompt("./bot/utils/map.yaml")

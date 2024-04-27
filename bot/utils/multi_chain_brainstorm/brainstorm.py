@@ -13,16 +13,11 @@ from langchain import hub
 from langchain.agents import AgentExecutor, create_react_agent, load_tools
 from langchain_community.chat_models import GigaChat
 from langchain_community.utilities import ArxivAPIWrapper
-
-load_dotenv()
-GIGACHAT_CREDENTIALS = os.getenv("GIGACHAT_API_AUTH")
-RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+from bot.utils.translate_utils import translate
 
 
 async def generate_find_the_paper(user_query):
     arxiv = ArxivAPIWrapper()
     docs = arxiv.run(user_query)
-    return docs
-
-
-# we use this to convert this to text
+    translated_text = await translate.translate_text(docs)
+    return translated_text
