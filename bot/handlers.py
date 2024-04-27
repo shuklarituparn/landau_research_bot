@@ -41,6 +41,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 Пиши /help чтобы узнать больше!  
     """
     markUP = ReplyKeyboardMarkup(keyboard)
+    print(update.effective_user.first_name)
     await update.message.reply_text(text=text, reply_markup=markUP)
     return SELECTING
 
@@ -183,8 +184,9 @@ async def text_to_speech(Filename, update: Update, context: ContextTypes.DEFAULT
 
 
 async def ask_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Привет")
-    result = await ai_helper.ai_help(update.message.text)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Найду и расскажу:")
+    text=update.message.text
+    result = await ai_helper.ai_help(text)
     await context.bot.send_message(chat_id=update.effective_chat.id, text=result)
 
 
