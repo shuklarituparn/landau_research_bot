@@ -3,6 +3,7 @@ import os
 
 from dotenv import load_dotenv
 import bot.Database.database as db
+from bot.utils.translate_utils import translate, translate_english
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import (
     ContextTypes,
@@ -145,11 +146,12 @@ async def brainstorm_a_paper(update: Update, context: ContextTypes.DEFAULT_TYPE)
     elif update.message.text.startswith("mail:"):
         if db.checking_user_email_exits(user_id=update.effective_user.id) != "":
             email = db.User.get(userid=update.effective_user.id).email
-            print(email)
+            # print(email)
             text_to_find = update.message.text.split(":")[1]
-            print(text_to_find)
+            # print(text_to_find)
+            text_to_find_enf=await translate_english.translate_text(text_to_find)
             doc_to_send = await brainstorm.generate_find_the_paper(
-                user_query=text_to_find
+                user_query=text_to_find_enf
             )
             # formatted_text=await email_formatter.text_formatter(doc_to_send)
             await context.bot.send_message(
@@ -164,7 +166,8 @@ async def brainstorm_a_paper(update: Update, context: ContextTypes.DEFAULT_TYPE)
     elif update.message.text.startswith("nml:"):
         text_to_find = update.message.text.split(":")[1]
         print(text_to_find)
-        doc = await brainstorm.generate_find_the_paper(user_query=text_to_find)
+        text_to_find_enf =await translate_english.translate_text(text_to_find)
+        doc = await brainstorm.generate_find_the_paper(user_query=text_to_find_enf)
         await context.bot.send_message(chat_id=update.effective_chat.id, text=doc)
     else:
         await context.bot.send_message(

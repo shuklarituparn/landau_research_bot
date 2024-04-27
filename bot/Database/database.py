@@ -21,9 +21,9 @@ class BaseModel(Model):
 
 class User(BaseModel):
     userid = BigIntegerField(primary_key=True)
-    usertoken = TextField()
-    email = TextField()
-    gigachat_token = TextField()
+    usertoken = TextField(default="")
+    email = TextField(default="")
+    gigachat_token = TextField(default="")
     username = CharField(max_length=255)
     name = CharField(max_length=255)
     chromacollection = CharField(max_length=255)
